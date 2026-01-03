@@ -1,0 +1,416 @@
+{
+  "width": 40,
+  "height": 30,
+  "roads": [
+    {
+      "x": 10,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 11,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 12,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 13,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 14,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 15,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 16,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 17,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 18,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 19,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 20,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 21,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 22,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 23,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 24,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 25,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 26,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 27,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 28,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 29,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 30,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 9,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 10,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 10,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 11,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 11,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 12,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 12,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 13,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 13,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 14,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 14,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 15,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 15,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 16,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 16,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 17,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 17,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 18,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 18,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 19,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 19,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 10,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 11,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 12,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 13,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 14,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 15,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 16,
+      "y": 20,
+      "entry": 1,
+      "id": 1
+    },
+    {
+      "x": 17,
+      "y": 20,
+      "entry": 1,
+      "id": 1
+    },
+    {
+      "x": 18,
+      "y": 20,
+      "entry": 2,
+      "id": 2
+    },
+    {
+      "x": 19,
+      "y": 20,
+      "entry": 2,
+      "id": 2
+    },
+    {
+      "x": 20,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 21,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 22,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 23,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 24,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 25,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 26,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 27,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 28,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 29,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 30,
+      "y": 20,
+      "entry": null,
+      "id": null
+    },
+    {
+      "x": 31,
+      "y": 20,
+      "entry": null,
+      "id": null
+    }
+  ],
+  "buildings": [
+    {
+      "id": 1,
+      "name": "建筑1",
+      "x": 16,
+      "y": 20,
+      "direction": 0
+    }
+  ],
+  "cities": [
+    {
+      "id": 2,
+      "name": "城池2",
+      "x": 18,
+      "y": 20,
+      "direction": 0,
+      "lv": 1,
+      "people": 0,
+      "army": 0,
+      "slots": [
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}
