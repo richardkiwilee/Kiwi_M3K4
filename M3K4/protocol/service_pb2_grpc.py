@@ -2,11 +2,12 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import Tetris.protocol.service_pb2 as service__pb2
+import m3k4.protocol.service_pb2 as service__pb2
 
 
-class LobbyStub(object):
-    """Missing associated documentation comment in .proto file."""
+class GameServiceStub(object):
+    """==================== 游戏服务定义 ====================
+    """
 
     def __init__(self, channel):
         """Constructor.
@@ -14,58 +15,192 @@ class LobbyStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Handle = channel.unary_unary(
-                '/lobby.Lobby/Handle',
-                request_serializer=service__pb2.GeneralRequest.SerializeToString,
-                response_deserializer=service__pb2.GeneralResponse.FromString,
+        self.JoinGame = channel.unary_unary(
+                '/m3k4.GameService/JoinGame',
+                request_serializer=service__pb2.JoinRequest.SerializeToString,
+                response_deserializer=service__pb2.JoinResponse.FromString,
                 )
-        self.Subscribe = channel.unary_stream(
-                '/lobby.Lobby/Subscribe',
-                request_serializer=service__pb2.GeneralRequest.SerializeToString,
-                response_deserializer=service__pb2.Broadcast.FromString,
+        self.SubscribeGameEvents = channel.unary_stream(
+                '/m3k4.GameService/SubscribeGameEvents',
+                request_serializer=service__pb2.SubscribeRequest.SerializeToString,
+                response_deserializer=service__pb2.GameEvent.FromString,
+                )
+        self.RollDice = channel.unary_unary(
+                '/m3k4.GameService/RollDice',
+                request_serializer=service__pb2.RollDiceRequest.SerializeToString,
+                response_deserializer=service__pb2.ActionResponse.FromString,
+                )
+        self.UseCard = channel.unary_unary(
+                '/m3k4.GameService/UseCard',
+                request_serializer=service__pb2.UseCardRequest.SerializeToString,
+                response_deserializer=service__pb2.ActionResponse.FromString,
+                )
+        self.TradeProp = channel.unary_unary(
+                '/m3k4.GameService/TradeProp',
+                request_serializer=service__pb2.TradePropRequest.SerializeToString,
+                response_deserializer=service__pb2.ActionResponse.FromString,
+                )
+        self.InteractBuilding = channel.unary_unary(
+                '/m3k4.GameService/InteractBuilding',
+                request_serializer=service__pb2.InteractBuildingRequest.SerializeToString,
+                response_deserializer=service__pb2.ActionResponse.FromString,
+                )
+        self.AdjustArmySize = channel.unary_unary(
+                '/m3k4.GameService/AdjustArmySize',
+                request_serializer=service__pb2.AdjustArmyRequest.SerializeToString,
+                response_deserializer=service__pb2.ActionResponse.FromString,
+                )
+        self.AdjustCityBuilding = channel.unary_unary(
+                '/m3k4.GameService/AdjustCityBuilding',
+                request_serializer=service__pb2.AdjustBuildingRequest.SerializeToString,
+                response_deserializer=service__pb2.ActionResponse.FromString,
+                )
+        self.MoveGeneral = channel.unary_unary(
+                '/m3k4.GameService/MoveGeneral',
+                request_serializer=service__pb2.MoveGeneralRequest.SerializeToString,
+                response_deserializer=service__pb2.ActionResponse.FromString,
+                )
+        self.PassByAction = channel.unary_unary(
+                '/m3k4.GameService/PassByAction',
+                request_serializer=service__pb2.PassByActionRequest.SerializeToString,
+                response_deserializer=service__pb2.ActionResponse.FromString,
                 )
 
 
-class LobbyServicer(object):
-    """Missing associated documentation comment in .proto file."""
+class GameServiceServicer(object):
+    """==================== 游戏服务定义 ====================
+    """
 
-    def Handle(self, request, context):
+    def JoinGame(self, request, context):
+        """玩家登录/加入游戏
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SubscribeGameEvents(self, request, context):
+        """游戏状态订阅（服务器推送）
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RollDice(self, request, context):
+        """大地图行为
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UseCard(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Subscribe(self, request, context):
+    def TradeProp(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def InteractBuilding(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AdjustArmySize(self, request, context):
+        """城池行为
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AdjustCityBuilding(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def MoveGeneral(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def PassByAction(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_LobbyServicer_to_server(servicer, server):
+def add_GameServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Handle': grpc.unary_unary_rpc_method_handler(
-                    servicer.Handle,
-                    request_deserializer=service__pb2.GeneralRequest.FromString,
-                    response_serializer=service__pb2.GeneralResponse.SerializeToString,
+            'JoinGame': grpc.unary_unary_rpc_method_handler(
+                    servicer.JoinGame,
+                    request_deserializer=service__pb2.JoinRequest.FromString,
+                    response_serializer=service__pb2.JoinResponse.SerializeToString,
             ),
-            'Subscribe': grpc.unary_stream_rpc_method_handler(
-                    servicer.Subscribe,
-                    request_deserializer=service__pb2.GeneralRequest.FromString,
-                    response_serializer=service__pb2.Broadcast.SerializeToString,
+            'SubscribeGameEvents': grpc.unary_stream_rpc_method_handler(
+                    servicer.SubscribeGameEvents,
+                    request_deserializer=service__pb2.SubscribeRequest.FromString,
+                    response_serializer=service__pb2.GameEvent.SerializeToString,
+            ),
+            'RollDice': grpc.unary_unary_rpc_method_handler(
+                    servicer.RollDice,
+                    request_deserializer=service__pb2.RollDiceRequest.FromString,
+                    response_serializer=service__pb2.ActionResponse.SerializeToString,
+            ),
+            'UseCard': grpc.unary_unary_rpc_method_handler(
+                    servicer.UseCard,
+                    request_deserializer=service__pb2.UseCardRequest.FromString,
+                    response_serializer=service__pb2.ActionResponse.SerializeToString,
+            ),
+            'TradeProp': grpc.unary_unary_rpc_method_handler(
+                    servicer.TradeProp,
+                    request_deserializer=service__pb2.TradePropRequest.FromString,
+                    response_serializer=service__pb2.ActionResponse.SerializeToString,
+            ),
+            'InteractBuilding': grpc.unary_unary_rpc_method_handler(
+                    servicer.InteractBuilding,
+                    request_deserializer=service__pb2.InteractBuildingRequest.FromString,
+                    response_serializer=service__pb2.ActionResponse.SerializeToString,
+            ),
+            'AdjustArmySize': grpc.unary_unary_rpc_method_handler(
+                    servicer.AdjustArmySize,
+                    request_deserializer=service__pb2.AdjustArmyRequest.FromString,
+                    response_serializer=service__pb2.ActionResponse.SerializeToString,
+            ),
+            'AdjustCityBuilding': grpc.unary_unary_rpc_method_handler(
+                    servicer.AdjustCityBuilding,
+                    request_deserializer=service__pb2.AdjustBuildingRequest.FromString,
+                    response_serializer=service__pb2.ActionResponse.SerializeToString,
+            ),
+            'MoveGeneral': grpc.unary_unary_rpc_method_handler(
+                    servicer.MoveGeneral,
+                    request_deserializer=service__pb2.MoveGeneralRequest.FromString,
+                    response_serializer=service__pb2.ActionResponse.SerializeToString,
+            ),
+            'PassByAction': grpc.unary_unary_rpc_method_handler(
+                    servicer.PassByAction,
+                    request_deserializer=service__pb2.PassByActionRequest.FromString,
+                    response_serializer=service__pb2.ActionResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'lobby.Lobby', rpc_method_handlers)
+            'm3k4.GameService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class Lobby(object):
-    """Missing associated documentation comment in .proto file."""
+class GameService(object):
+    """==================== 游戏服务定义 ====================
+    """
 
     @staticmethod
-    def Handle(request,
+    def JoinGame(request,
             target,
             options=(),
             channel_credentials=None,
@@ -75,14 +210,14 @@ class Lobby(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/lobby.Lobby/Handle',
-            service__pb2.GeneralRequest.SerializeToString,
-            service__pb2.GeneralResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/m3k4.GameService/JoinGame',
+            service__pb2.JoinRequest.SerializeToString,
+            service__pb2.JoinResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def Subscribe(request,
+    def SubscribeGameEvents(request,
             target,
             options=(),
             channel_credentials=None,
@@ -92,8 +227,144 @@ class Lobby(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/lobby.Lobby/Subscribe',
-            service__pb2.GeneralRequest.SerializeToString,
-            service__pb2.Broadcast.FromString,
+        return grpc.experimental.unary_stream(request, target, '/m3k4.GameService/SubscribeGameEvents',
+            service__pb2.SubscribeRequest.SerializeToString,
+            service__pb2.GameEvent.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RollDice(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/m3k4.GameService/RollDice',
+            service__pb2.RollDiceRequest.SerializeToString,
+            service__pb2.ActionResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def UseCard(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/m3k4.GameService/UseCard',
+            service__pb2.UseCardRequest.SerializeToString,
+            service__pb2.ActionResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def TradeProp(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/m3k4.GameService/TradeProp',
+            service__pb2.TradePropRequest.SerializeToString,
+            service__pb2.ActionResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def InteractBuilding(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/m3k4.GameService/InteractBuilding',
+            service__pb2.InteractBuildingRequest.SerializeToString,
+            service__pb2.ActionResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AdjustArmySize(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/m3k4.GameService/AdjustArmySize',
+            service__pb2.AdjustArmyRequest.SerializeToString,
+            service__pb2.ActionResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AdjustCityBuilding(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/m3k4.GameService/AdjustCityBuilding',
+            service__pb2.AdjustBuildingRequest.SerializeToString,
+            service__pb2.ActionResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def MoveGeneral(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/m3k4.GameService/MoveGeneral',
+            service__pb2.MoveGeneralRequest.SerializeToString,
+            service__pb2.ActionResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def PassByAction(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/m3k4.GameService/PassByAction',
+            service__pb2.PassByActionRequest.SerializeToString,
+            service__pb2.ActionResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

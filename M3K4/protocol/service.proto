@@ -1,30 +1,261 @@
 
 syntax = "proto3";
 
-package lobby;
+package m3k4;
 
-service Lobby {
-  rpc Handle (GeneralRequest) returns (GeneralResponse) {}
-  rpc Subscribe (GeneralRequest) returns (stream Broadcast) {}
+// ==================== 游戏服务定义 ====================
+service GameService {
+  // 玩家登录/加入游戏
+  rpc JoinGame (JoinRequest) returns (JoinResponse) {}
+  
+  // 游戏状态订阅（服务器推送）
+  rpc SubscribeGameEvents (SubscribeRequest) returns (stream GameEvent) {}
+  
+  // 大地图行为
+  rpc RollDice (RollDiceRequest) returns (ActionResponse) {}
+  rpc UseCard (UseCardRequest) returns (ActionResponse) {}
+  rpc TradeProp (TradePropRequest) returns (ActionResponse) {}
+  rpc InteractBuilding (InteractBuildingRequest) returns (ActionResponse) {}
+  
+  // 城池行为
+  rpc AdjustArmySize (AdjustArmyRequest) returns (ActionResponse) {}
+  rpc AdjustCityBuilding (AdjustBuildingRequest) returns (ActionResponse) {}
+  rpc MoveGeneral (MoveGeneralRequest) returns (ActionResponse) {}
+  rpc PassByAction (PassByActionRequest) returns (ActionResponse) {}
 }
 
-message GeneralRequest {
-  string sender = 1;
-  string body = 2;
+// ==================== 基础消息类型 ====================
+
+// 玩家加入游戏
+message JoinRequest {
+  string player_id = 1;
+  string player_name = 2;
 }
 
-message GeneralResponse {
+message JoinResponse {
+  bool success = 1;
+  string message = 2;
+  int32 player_slot = 3; // 玩家槽位 (0-3)
+  GameState initial_state = 4;
+}
+
+// 订阅游戏事件
+message SubscribeRequest {
+  string player_id = 1;
+}
+
+// 游戏事件流
+message GameEvent {
   int32 sequence = 1;
-  int32 msgtype = 2;
-  int32 status = 3;
-  string sender = 4;
-  string body = 5;
+  EventType event_type = 2;
+  string data = 3; // JSON格式的事件数据
+  int64 timestamp = 4;
 }
 
-message Broadcast {
-  int32 sequence = 1;
-  int32 msgtype = 2;
-  int32 status = 3;
-  string sender = 4;
-  string body = 5;
+// 通用操作响应
+message ActionResponse {
+  bool success = 1;
+  string message = 2;
+  GameState updated_state = 3;
+}
+
+// 游戏状态
+message GameState {
+  repeated PlayerState players = 1;
+  MapState map_state = 2;
+  int32 current_turn = 3;
+  string current_player_id = 4;
+}
+
+// 玩家状态
+message PlayerState {
+  string player_id = 1;
+  string player_name = 2;
+  int32 slot = 3;
+  int32 prestige = 4; // 声望
+  int32 money = 5; // 金钱（两）
+  int32 army_count = 6; // 兵数
+  int32 city_count = 7; // 城池数量
+  int32 general_count = 8; // 武将数量
+  repeated string cards = 9; // 锦囊
+  repeated string mechanisms = 10; // 机关
+  repeated string building_blueprints = 11; // 建筑图纸
+  repeated string weapons = 12; // 持有武器
+  Position current_position = 13; // 当前位置
+}
+
+// 地图状态
+message MapState {
+  int32 width = 1;
+  int32 height = 2;
+  repeated RoadCell roads = 3;
+  repeated Building buildings = 4;
+  repeated City cities = 5;
+}
+
+message Position {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message RoadCell {
+  int32 x = 1;
+  int32 y = 2;
+  int32 entry = 3; // null=0, 入口1=1, 入口2=2
+  int32 building_id = 4; // 关联的建筑/城池ID
+  int32 arrow_direction = 5; // 分叉箭头方向 (0=无, 1=上, 2=右, 3=下, 4=左)
+}
+
+message Building {
+  int32 id = 1;
+  string name = 2;
+  BuildingType type = 3;
+  Position position = 4;
+}
+
+enum BuildingType {
+  BUILDING_UNKNOWN = 0;
+  BOWL_HOUSE = 1; // 碗公
+  HORSE_RACE = 2; // 赛马
+  CARD_SHOP = 3; // 锦囊店
+  HOSPITAL = 4; // 医馆
+  BLACKSMITH = 5; // 铁匠铺
+  RECRUITMENT = 6; // 征兵所
+  TAVERN = 7; // 聚贤庄
+  BANK = 8; // 钱庄
+  WORKSHOP = 9; // 工匠铺
+  SCHOOL = 10; // 私塾
+  MARTIAL_HALL = 11; // 武馆
+  LUBAN_HOUSE = 12; // 鲁班屋
+}
+
+message City {
+  int32 id = 1;
+  string name = 2;
+  int32 level = 3;
+  int32 population = 4; // 人口
+  int32 army = 5; // 驻军
+  repeated CitySlot slots = 6; // 建筑槽位
+  string owner_id = 7; // 城主ID
+  repeated string generals = 8; // 驻守武将ID列表
+  Position position = 9;
+}
+
+message CitySlot {
+  int32 slot_index = 1;
+  int32 building_id = 2; // 0=空, >0=建筑ID, -1=不可用
+}
+
+// ==================== 大地图行为请求 ====================
+
+// 投骰子
+message RollDiceRequest {
+  string player_id = 1;
+}
+
+// 使用锦囊
+message UseCardRequest {
+  string player_id = 1;
+  string card_id = 2; // 锦囊ID
+  string user_id = 3; // 使用人ID
+  string target_id = 4; // 目标ID
+}
+
+// 买卖道具
+message TradePropRequest {
+  string player_id = 1;
+  PropType prop_type = 2; // 购买类型
+  TradeDirection direction = 3; // 买卖方向
+  string prop_id = 4; // 购买ID
+  int32 quantity = 5; // 数量
+}
+
+enum PropType {
+  PROP_UNKNOWN = 0;
+  PROP_CARD = 1; // 锦囊
+  PROP_HOSPITAL = 2; // 医馆
+  PROP_BLACKSMITH = 3; // 铁匠铺
+  PROP_RECRUITMENT = 4; // 征兵所
+  PROP_TAVERN = 5; // 聚贤庄
+  PROP_BANK = 6; // 钱庄
+  PROP_WORKSHOP = 7; // 工匠铺
+  PROP_SCHOOL = 8; // 私塾
+  PROP_MARTIAL_HALL = 9; // 武馆
+  PROP_LUBAN_HOUSE = 10; // 鲁班屋
+}
+
+enum TradeDirection {
+  TRADE_UNKNOWN = 0;
+  BUY = 1; // 购买
+  SELL = 2; // 出售
+}
+
+// 地图建筑互动
+message InteractBuildingRequest {
+  string player_id = 1;
+  InteractionType interaction_type = 2; // 互动类型
+  string interaction_action = 3; // 互动行为（JSON格式）
+  int32 building_id = 4; // 建筑ID
+}
+
+enum InteractionType {
+  INTERACTION_UNKNOWN = 0;
+  BOWL_HOUSE_GAME = 1; // 碗公
+  HORSE_RACE_GAME = 2; // 赛马
+}
+
+// ==================== 城池行为请求 ====================
+
+// 调整兵力
+message AdjustArmyRequest {
+  string player_id = 1;
+  int32 city_id = 2;
+  int32 army_adjustment = 3; // 正数=增加，负数=减少
+}
+
+// 调整建筑
+message AdjustBuildingRequest {
+  string player_id = 1;
+  int32 city_id = 2;
+  int32 slot_index = 3; // 槽位索引
+  int32 building_id = 4; // 建筑ID (0=拆除)
+}
+
+// 调整武将位置
+message MoveGeneralRequest {
+  string player_id = 1;
+  string general_id = 2; // 武将ID
+  GeneralLocation new_location = 3; // 新位置
+}
+
+message GeneralLocation {
+  LocationType type = 1;
+  int32 city_id = 2; // 如果在城池中
+  Position map_position = 3; // 如果在地图上
+}
+
+enum LocationType {
+  LOCATION_UNKNOWN = 0;
+  IN_CITY = 1; // 在城池中
+  ON_MAP = 2; // 在地图上
+  WITH_PLAYER = 3; // 跟随玩家
+}
+
+// 过路动作
+message PassByActionRequest {
+  string player_id = 1;
+  PassByAction action = 2; // 行为
+  string general1_id = 3; // 武将1
+  string advisor1_id = 4; // 军师1
+  string card_id = 5; // 锦囊
+  string siege_weapon_id = 6; // 攻城器
+}
+
+enum PassByAction {
+  PASS_BY_UNKNOWN = 0;
+  PASS_THROUGH = 1; // 直接通过
+  ATTACK_CITY = 2; // 攻城
+  NEGOTIATE = 3; // 谈判
+  TRADE = 4; // 交易
+  RECRUIT = 5; // 招募
 }

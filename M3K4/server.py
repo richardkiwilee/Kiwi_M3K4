@@ -6,18 +6,11 @@ import random
 from enum import Enum
 import logging
 import json
-from urllib.parse import uses_fragment
 import grpc
-from Tetris.game.action import PlayerAction, SystemResponse
-from Tetris.game.player import Player
-import Tetris.protocol.service_pb2 as pb2
-import Tetris.protocol.service_pb2_grpc as rpc
-from Tetris.game.manager import Manager
+import M3K4.protocol.service_pb2 as pb2
+import M3K4.protocol.service_pb2_grpc as rpc
 from concurrent.futures import ThreadPoolExecutor
-from Tetris.game.action import *
 import threading
-from Tetris.game.terrain import Terrain
-from Tetris.game.player import PlayerResource
 
 queues = []
 # 配置日志记录器
@@ -36,269 +29,150 @@ class GameStatus(Enum):
     LOBBY = 1
     IN_GAME = 2
 
-class LobbyServicer(rpc.LobbyServicer):
+class GameServiceServicer(rpc.GameServiceServicer):
     def __init__(self):
-        self.gm = Manager()
         self.status = GameStatus.LOBBY.value
         self.host = None
-        self.users = dict()     # 记录当前大厅的玩家状态
-        self.player_order = []  # 玩家名字列表，按加入顺序决定回合顺序
+        self.users = dict()     # 记录当前大厅的玩家状态 {player_id: {player_name, slot, stream, ...}}
+        self.player_order = []  # 玩家ID列表，按加入顺序决定回合顺序
         self.current_player_index = 0
         self.seq = 0
-        self.deck = None
+        # 游戏状态
+        self.game_state = None  # GameState message
+        self.map_data = None    # 地图数据
 
     def StartGame(self):
-        # 设置游戏状态
+        """开始游戏"""
         self.status = GameStatus.IN_GAME.value
-        # 使用已有的player_order（按加入顺序）
-        for username in self.player_order:
-            self.gm.AddPlayer(username)
-        # 初始化游戏管理器
-        self.gm.StartGame()
-        # 重置当前玩家索引
         self.current_player_index = 0
-        # 初始化游戏相关组件
-        self.deck = self.gm.puzzle_deck
+        # TODO: 初始化游戏状态
+        logger.info('Game started')
 
-    def Handle(self, request, context):
-        resp = {'type': None, 'msg': ''}
-        sender = request.sender
-        body = json.loads(request.body)
-        logger.debug(f'Received: {body}')
-        action = body.get('action')
-        
-        # 强制刷新功能
-        if action == PlayerAction.Sync.value:
-            self._broadcast()
-            return self._response(SystemResponse.OK, resp)
-        
-        # 大厅状态
-        if self.status == GameStatus.LOBBY.value:
-            if action == PlayerAction.Login.value:
-                username = body['arg1']
-                # 第一个玩家作为房主
-                if len(self.users) == 0:
-                    self.host = username
-                # 新玩家加入
-                if username not in self.users:
-                    self.users[username] = dict()
-                    self.users[username]['ready'] = False
-                    # 将玩家添加到玩家顺序列表
-                    if username not in self.player_order:
-                        self.player_order.append(username)
-                    self._broadcast()
-                    logger.debug(f'User {username} logined')
-                    return self._response(SystemResponse.OK, resp)
+    # ==================== gRPC 方法实现 ====================
+    
+    def JoinGame(self, request, context):
+        """玩家加入游戏"""
+        try:
+            player_id = request.player_id
+            player_name = request.player_name
+            
+            # 检查玩家槽位是否已满（最多4个玩家）
+            if len(self.users) >= 4:
+                return pb2.JoinResponse(
+                    success=False,
+                    message="游戏已满，无法加入",
+                    player_slot=-1
+                )
+            
+            # 第一个玩家作为房主
+            if len(self.users) == 0:
+                self.host = player_id
+            
+            # 分配玩家槽位
+            player_slot = len(self.users)
+            
+            # 添加玩家
+            if player_id not in self.users:
+                self.users[player_id] = {
+                    'player_name': player_name,
+                    'slot': player_slot,
+                    'ready': False
+                }
+                self.player_order.append(player_id)
+                logger.info(f'Player {player_name} (ID: {player_id}) joined at slot {player_slot}')
+            else:
                 # 玩家重新连接
-                else:
-                    # 如果玩家不在顺序列表中（可能是由于之前的退出），重新添加
-                    if username not in self.player_order:
-                        self.player_order.append(username)
-                    self._broadcast()
-                    logger.debug(f'User {username} logined')
-                    return self._response(SystemResponse.OK, resp)
+                logger.info(f'Player {player_name} (ID: {player_id}) reconnected')
             
-            if action == PlayerAction.Logout.value:
-                username = body['arg1']
-                if username in self.users:
-                    self.users.pop(username)
-                    # 从玩家顺序列表中移除
-                    if username in self.player_order:
-                        self.player_order.remove(username)
-                    
-                    # 检查是否还有其他用户连接
-                    if not self.users:
-                        # 如果没有用户，重置房间状态
-                        self.reset_room()
-                    
-                    self._broadcast()
-                resp['msg'] = f'{username} Logout'
-                logger.debug(f'User {username} logout')
-                return self._response(SystemResponse.OK, resp)
+            # TODO: 构建初始游戏状态
+            initial_state = pb2.GameState(
+                current_turn=0,
+                current_player_id=""
+            )
             
-            if action == PlayerAction.StartGame.value:
-                if sender != self.host:
-                    resp['msg'] = 'Only host can start game'
-                    return self._response(SystemResponse.ERROR, resp)
-                if not self.isAllPlayerReady():
-                    resp['msg'] = 'Not all players are ready'
-                    return self._response(SystemResponse.ERROR, resp)
-                self.StartGame()
-                self._broadcast()
-                resp['msg'] = 'Game started'
-                return self._response(SystemResponse.OK, resp)
+            return pb2.JoinResponse(
+                success=True,
+                message=f"成功加入游戏，槽位 {player_slot}",
+                player_slot=player_slot,
+                initial_state=initial_state
+            )
+        except Exception as e:
+            logger.error(f'Error in JoinGame: {e}')
+            traceback.print_exc()
+            return pb2.JoinResponse(
+                success=False,
+                message=f"加入游戏失败: {str(e)}",
+                player_slot=-1
+            )
+    
+    def SubscribeGameEvents(self, request, context):
+        """订阅游戏事件流"""
+        try:
+            player_id = request.player_id
             
-            if action == PlayerAction.Ready.value:
-                if sender in self.users:
-                    self.users[sender]['ready'] = True
-                    self._broadcast()
-                    resp['msg'] = f'{sender} Ready'
-                return self._response(SystemResponse.OK, resp)            
+            # 创建消息队列
+            message_queue = queue.Queue()
             
-        # 游戏进行中状态
-        if self.status == GameStatus.IN_GAME.value:
-            # 检查是否是当前玩家的回合
-            if sender != self.player_order[self.current_player_index]:
-                self._broadcast()
-                resp['msg'] = f'Not your turn, current player index: {self.current_player_index}'
-                return self._response(SystemResponse.ERROR, resp) 
-
-            if action == PlayerAction.EndTurn.value:
-                self.next_player()
-                self._broadcast()
-                resp['msg'] = f'{sender} end turn'
-                return self._response(SystemResponse.OK, resp) 
+            # 添加到用户列表
+            if player_id not in self.users:
+                self.users[player_id] = {'stream': message_queue}
+            else:
+                self.users[player_id]['stream'] = message_queue
             
-            if action == PlayerAction.Place.value:
-                logger.info(f'{sender} place {body}')
-                try:
-                    # 获取玩家
-                    player = self.gm.players[sender]
-                    # 获取拼块
-                    puzzle_id = int(body['arg2'])
-                    puzzle = player.puzzles[puzzle_id]
-                    # 获取放置位置和旋转角度
-                    x = int(body['arg3'])
-                    y = int(body['arg4'])
-                    rotate = int(body['arg5'])
-                    # 尝试放置
-                    if self.gm.Place(player, x, y, puzzle, rotate):
-                        # 放置成功，移除玩家手中的拼块
-                        self.gm.PlayerRemovePuzzle(player, puzzle_id)
-                        add_resource_cnt = len(self.gm.shape_helper.GetShape(puzzle.shape))
-                        if puzzle.building_id is None:
-                            if puzzle.terrainType == Terrain.Plain.value:
-                                player.AddResource(PlayerResource.Food, add_resource_cnt)
-                            elif puzzle.terrainType == Terrain.Forest.value:
-                                player.AddResource(PlayerResource.Wood, add_resource_cnt)
-                            elif puzzle.terrainType == Terrain.River.value:
-                                player.AddResource(PlayerResource.Gold, add_resource_cnt)
-                            elif puzzle.terrainType == Terrain.Farmland.value:
-                                player.AddResource(PlayerResource.Food, add_resource_cnt * 2)
-                            elif puzzle.terrainType == Terrain.Mountain.value:
-                                player.AddResource(PlayerResource.Stone, add_resource_cnt)
-                        # 如果填满了一个区域 额外获得一次奖励资源
-                        _block = []
-                        for cell in self.gm.GetDesktopPosition(x, y, puzzle, rotate):
-                            _block.append(self.gm.GetBlockByCell(cell[0], cell[1]))
-                        _block = list(set(_block))
-                        block_size = self.gm.setting['block_size']
-                        for _block_x, _block_y in _block:
-                            terrain_count_dict = {
-                                Terrain.Plain.value: 0,
-                                Terrain.Forest.value: 0,
-                                Terrain.River.value: 0,
-                                Terrain.Farmland.value: 0,
-                                Terrain.Mountain.value: 0
-                            }
-                            fullfill = True
-                            for cell_x in range(_block_x * block_size, (_block_x + 1) * block_size):
-                                for cell_y in range(_block_y * block_size, (_block_y + 1) * block_size):
-                                    cell = self.gm.Desktop.GetCell(cell_x, cell_y)
-                                    if cell.terrainType == Terrain.Unknown.value:
-                                        fullfill = False
-                                    if cell.terrainType in terrain_count_dict.keys():
-                                        terrain_count_dict[cell.terrainType] += 1
-                            if fullfill:
-                                logger.info(f'Fullfill Block: {_block_x}, {_block_y}. Bouns: {terrain_count_dict}')
-                                for terrain_type, count in terrain_count_dict.items():
-                                    if terrain_type == Terrain.Plain.value:
-                                        player.AddResource(PlayerResource.Food, 5 * count)
-                                    elif terrain_type == Terrain.Forest.value:
-                                        player.AddResource(PlayerResource.Wood, 5 * count)
-                                    elif terrain_type == Terrain.River.value:
-                                        player.AddResource(PlayerResource.Gold, 5 * count)
-                                    elif terrain_type == Terrain.Farmland.value:
-                                        player.AddResource(PlayerResource.Food, 5 * count * 2)
-                                    elif terrain_type == Terrain.Mountain.value:
-                                        player.AddResource(PlayerResource.Stone, 5 * count)
-                            else:
-                                logger.info(f'Not fullfill Block: {_block_x}, {_block_y}. Bouns: {terrain_count_dict}')
-                        # 抽取新的拼块
-                        self.PlayerDrawToLimit(player)
-                        self.next_player()
-                        self._broadcast()
-                        resp['msg'] = f'{sender} placed puzzle {puzzle_id} at ({x}, {y}) with rotation {rotate}'
-                    else:
-                        resp['msg'] = 'Failed to place puzzle'
-                        logger.error(f'Failed to place puzzle {puzzle_id} at ({x}, {y}) with rotation {rotate}')
-                        self._broadcast()
-                        return self._response(SystemResponse.ERROR, resp)
-                except Exception as e:
-                    logger.error(f'Error in Place action: {e}')
-                    resp['msg'] = f'Error: {str(e)}'
-                    logger.error(f'Handle Place action error: {resp}')
-                    traceback.print_exc()
-                    return self._response(SystemResponse.ERROR, resp)
-                self._broadcast()
-                return self._response(SystemResponse.OK, resp)
-
-            if action == PlayerAction.ChangeCard.value:
-                player = self.gm.players[sender]
-                for puzzle_id, puzzle in list(player.puzzles.items()):
-                    if puzzle.building_id is not None:
-                        cost = self.gm.BuildingFactory.GetCostById(puzzle.building_id, 0)
-                        if not player.ResourceEnough(cost):
-                            # Remove the puzzle and draw a terrain puzzle instead
-                            self.gm.PlayerRemovePuzzle(player, puzzle_id)
-                self.PlayerDrawTerrainToLimit(player)
-                self._broadcast()
-                return self._response(SystemResponse.OK, resp)
+            # 注册断开连接回调
+            context.add_callback(self._onDisconnectWrapper(request, context))
             
-            if action == PlayerAction.Active.value:
-                player = self.gm.players[sender]
-                puzzle_id = int(body['arg2'])
-                puzzle = self.gm.puzzle_objs[puzzle_id]
-                _ = self.gm.ActiveBuilding(player, puzzle)
-                if _:
-                    logger.info(f'{sender} activated puzzle {puzzle_id}')
-                else:
-                    logger.error(f'{sender} failed to activate puzzle {puzzle_id}')
-                self._broadcast()
-                return self._response(SystemResponse.OK, resp) 
+            # 发送初始游戏状态
+            self._broadcast_event()
             
-            if action == PlayerAction.Upgrade.value:
-                print('UpgradeBuilding?')
-                player = self.gm.players[sender]
-                puzzle_id = int(body['arg2'])
-                print(player)
-                print(puzzle_id)
-                print(player.puzzles)
-                puzzle = self.gm.puzzle_objs[puzzle_id]
-                print(puzzle)
-                print('UpgradeBuilding??')
-                _ = self.gm.UpgradeBuilding(player, puzzle)
-                if _:
-                    logger.info(f'{sender} upgraded puzzle {puzzle_id}')
-                else:
-                    logger.error(f'{sender} failed to upgrade puzzle {puzzle_id}')
-                self._broadcast()
-                return self._response(SystemResponse.OK, resp) 
+            logger.info(f'Player {player_id} subscribed to game events')
             
-            if action == PlayerAction.Attack.value:
-                player = self.gm.players[sender]
-                puzzle_id = int(body['arg2'])
-                puzzle = self.gm.puzzle_objs[puzzle_id]
-                _ = self.gm.Attack(player, puzzle)
-                if _:
-                    logger.info(f'{sender} attacked puzzle {puzzle_id}')
-                else:
-                    logger.error(f'{sender} failed to attack puzzle {puzzle_id}')
-                self._broadcast()
-                return self._response(SystemResponse.OK, resp) 
-
-        self._broadcast()
-        resp['msg'] = 'Unexpect response'
-        return self._response(SystemResponse.ERROR, resp)
-
-    def PlayerDrawTerrainToLimit(self, player, limit=5):
-        while len(player.puzzles) < limit:
-            self.gm.PlayerDrawTerrain(player)
-
-    def PlayerDrawToLimit(self, player, limit=5):
-        while len(player.puzzles) < limit:
-            self.gm.PlayerDraw(player)
-
+            # 持续发送消息
+            while True:
+                message = message_queue.get()
+                if message is None:  # 终止信号
+                    break
+                yield message
+        except Exception as e:
+            logger.error(f'Error in SubscribeGameEvents for {player_id}: {e}')
+            traceback.print_exc()
+        finally:
+            # 清理
+            if player_id in self.users and 'stream' in self.users[player_id]:
+                del self.users[player_id]['stream']
+    
+    def RollDice(self, request, context):
+        """投骰子"""
+        pass
+    
+    def UseCard(self, request, context):
+        """使用锦囊"""
+        pass
+    
+    def TradeProp(self, request, context):
+        """买卖道具"""
+        pass
+    
+    def InteractBuilding(self, request, context):
+        """地图建筑互动"""
+        pass
+    
+    def AdjustArmySize(self, request, context):
+        """调整兵力"""
+        pass
+    
+    def AdjustCityBuilding(self, request, context):
+        """调整建筑"""
+        pass
+    
+    def MoveGeneral(self, request, context):
+        """调整武将位置"""
+        pass
+    
+    def PassByAction(self, request, context):
+        """过路动作"""
+        pass
+    
     def get_current_player(self):
         """获取当前回合的玩家"""
         if not self.player_order:
@@ -309,7 +183,6 @@ class LobbyServicer(rpc.LobbyServicer):
         """移动到下一个玩家"""
         self.current_player_index = (self.current_player_index + 1) % len(self.player_order)
         return self.get_current_player()
-
 
     def isAllPlayerReady(self):
         for k in self.users.keys():
@@ -346,7 +219,6 @@ class LobbyServicer(rpc.LobbyServicer):
         elif self.status == GameStatus.LOBBY.value and username == self.host and len(self.users) > 0:
             # 选择新房主（第一个在线的玩家）
             self.host = next(iter(self.users.keys()))
-
 
     def Subscribe(self, request, context):
         """
