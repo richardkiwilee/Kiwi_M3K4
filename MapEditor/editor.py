@@ -35,11 +35,32 @@ LIGHT_GRAY = (230, 230, 230)
 DARK_GRAY = (100, 100, 100)
 CREAM = (255, 253, 245)
 ROAD_COLOR = (139, 90, 43)  # 棕色道路
-BUILDING_COLOR = (100, 149, 237)  # 蓝色建筑
-CITY_COLOR = (255, 215, 0)  # 金色城池
+BUILDING_COLOR = (220, 20, 60)  # 红色建筑
+CITY_COLOR = (255, 215, 0)  # 金色城池（默认）
 ARROW_COLOR = (255, 0, 0)  # 红色箭头
 GREEN = (0, 200, 0)
 RED = (255, 0, 0)
+
+# 城池类型颜色
+CITY_TYPE_COLORS = {
+    "陆": (139, 90, 43),      # 棕色（陆地）
+    "水": (65, 105, 225),     # 蓝色（水域）
+    "林": (34, 139, 34),      # 绿色（森林）
+}
+
+# 城池类型深色（用于名称区）
+CITY_TYPE_DARK_COLORS = {
+    "陆": (109, 70, 33),      # 深棕色
+    "水": (45, 85, 205),      # 深蓝色
+    "林": (24, 109, 24),      # 深绿色
+}
+
+# 城池类型浅色（用于槽位）
+CITY_TYPE_LIGHT_COLORS = {
+    "陆": (189, 140, 93),     # 浅棕色
+    "水": (115, 155, 255),    # 浅蓝色
+    "林": (84, 189, 84),      # 浅绿色
+}
 
 # 地图元素类型
 class CellType(Enum):
@@ -66,6 +87,7 @@ class MapCell:
         self.building_id = None  # 建筑物/城池的ID（用于标识同一个建筑的多个格子）
         self.is_entrance = False  # 是否是入口格子
         self.city_name = ""  # 城池名称
+        self.city_type = "陆"  # 城池类型（陆/水/林）
         
     def to_dict(self):
         return {
@@ -75,7 +97,8 @@ class MapCell:
             'arrow_direction': self.arrow_direction.value,
             'building_id': self.building_id,
             'is_entrance': self.is_entrance,
-            'city_name': self.city_name
+            'city_name': self.city_name,
+            'city_type': self.city_type
         }
     
     @staticmethod
@@ -88,6 +111,7 @@ class MapCell:
         cell.building_id = data.get('building_id')
         cell.is_entrance = data.get('is_entrance', False)
         cell.city_name = data.get('city_name', '')
+        cell.city_type = data.get('city_type', '陆')
         return cell
 
 class Tool(Enum):
@@ -120,6 +144,7 @@ class MapEditor:
         # 建筑和城池名称映射（ID -> 名称）
         self.building_names = {}  # {building_id: name}
         self.city_names = {}  # {city_id: name}
+        self.city_types = {}  # {city_id: type} 城池类型
         
         # 字体 - 使用系统字体支持中文
         try:
@@ -362,15 +387,19 @@ class MapEditor:
                 cell.is_entrance = False
                 cell.direction = direction
     
-    def place_city(self, entrance_x: int, entrance_y: int, building_slots: int = 1, direction: Direction = Direction.UP):
+    def place_city(self, entrance_x: int, entrance_y: int, building_slots: int = 1, direction: Direction = Direction.UP, city_type: str = "陆"):
         """
         放置城池
         城池占地：2格入口 + 2x(1+slots)格城池体 = 共6-10格
         入口在道路上（不占面积）
         城池体是矩形，宽度与入口一致（2格）
+        city_type: 城池类型（陆/水/林）
         """
         building_id = self.next_building_id
         self.next_building_id += 1
+        
+        # 保存城池类型
+        self.city_types[building_id] = city_type
         
         building_slots = max(1, min(3, building_slots))
         
@@ -403,6 +432,7 @@ class MapEditor:
                 cell.is_entrance = False
                 cell.direction = direction
                 cell.building_slots = building_slots
+                cell.city_type = city_type
                 # 前2个格子是名称区（第一行）
                 if i < 2:
                     cell.city_name = "城池"
@@ -641,43 +671,72 @@ class MapEditor:
                         text_surf = self.small_font.render("入", True, WHITE)
                         self.screen.blit(text_surf, (rect.x + 5, rect.y + 5))
                     else:
-                        # 建筑体颜色深一些
-                        darker_blue = (70, 119, 207)
-                        pygame.draw.rect(self.screen, darker_blue, rect)
-                        # 显示建筑名称
+                        # 建筑体使用深红色
+                        darker_red = (180, 20, 50)
+                        pygame.draw.rect(self.screen, darker_red, rect)
+                        # 显示建筑名称（每个格子显示一个字）
                         if cell.building_id:
-                            name = self.building_names.get(cell.building_id, f'B{cell.building_id}')
-                            text_surf = self.small_font.render(name, True, WHITE)
-                            self.screen.blit(text_surf, (rect.x + 2, rect.y + 5))
+                            full_name = self.building_names.get(cell.building_id, f'B{cell.building_id}')
+                            # 确保名称是2个字
+                            if len(full_name) >= 2:
+                                # 判断当前格子是建筑体的第几个格子
+                                # 通过检查左边和上边是否有相同building_id的建筑格来判断
+                                char_index = 0
+                                # 检查左边
+                                if x > 0 and self.grid[y][x-1].building_id == cell.building_id and self.grid[y][x-1].type == CellType.BUILDING and not self.grid[y][x-1].is_entrance:
+                                    char_index = 1
+                                # 检查上边
+                                elif y > 0 and self.grid[y-1][x].building_id == cell.building_id and self.grid[y-1][x].type == CellType.BUILDING and not self.grid[y-1][x].is_entrance:
+                                    # 如果上边有建筑，则当前是第二行，需要再检查左边
+                                    if x > 0 and self.grid[y][x-1].building_id == cell.building_id and self.grid[y][x-1].type == CellType.BUILDING and not self.grid[y][x-1].is_entrance:
+                                        char_index = 3  # 右下角
+                                    else:
+                                        char_index = 2  # 左下角
+                                
+                                # 只显示前2个字（左上和右上）
+                                if char_index < 2 and char_index < len(full_name):
+                                    char = full_name[char_index]
+                                    text_surf = self.font.render(char, True, WHITE)
+                                    text_rect = text_surf.get_rect(center=(rect.centerx, rect.centery))
+                                    self.screen.blit(text_surf, text_rect)
                 elif cell.type == CellType.CITY:
+                    # 获取城池类型和对应颜色
+                    city_type = cell.city_type
+                    base_color = CITY_TYPE_COLORS.get(city_type, CITY_COLOR)
+                    dark_color = CITY_TYPE_DARK_COLORS.get(city_type, (225, 185, 0))
+                    light_color = CITY_TYPE_LIGHT_COLORS.get(city_type, (255, 235, 100))
+                    
                     if cell.is_entrance:
-                        pygame.draw.rect(self.screen, CITY_COLOR, rect)
+                        pygame.draw.rect(self.screen, base_color, rect)
                         # 绘制入口标记
-                        text_surf = self.small_font.render("入", True, BLACK)
+                        text_surf = self.small_font.render("入", True, WHITE)
                         self.screen.blit(text_surf, (rect.x + 5, rect.y + 5))
                     elif cell.city_name:
-                        # 名称区
-                        darker_gold = (225, 185, 0)
-                        pygame.draw.rect(self.screen, darker_gold, rect)
-                        # 显示城池ID（只在第一格显示）
-                        # 检查是否是名称区的第一格（左上角）
-                        is_first_cell = True
-                        if x > 0 and self.grid[y][x-1].building_id == cell.building_id and self.grid[y][x-1].city_name:
-                            is_first_cell = False
-                        if y > 0 and self.grid[y-1][x].building_id == cell.building_id and self.grid[y-1][x].city_name:
-                            is_first_cell = False
-                        
-                        if is_first_cell and cell.building_id:
-                            name = self.city_names.get(cell.building_id, f'C{cell.building_id}')
-                            text_surf = self.small_font.render(name, True, BLACK)
-                            self.screen.blit(text_surf, (rect.x + 2, rect.y + 5))
+                        # 名称区 - 使用深色
+                        pygame.draw.rect(self.screen, dark_color, rect)
+                        # 显示城池名称（每个格子显示一个字）
+                        # 获取完整城池名称
+                        if cell.building_id:
+                            full_name = self.city_names.get(cell.building_id, f'C{cell.building_id}')
+                            # 确保名称是2个字
+                            if len(full_name) >= 2:
+                                # 判断当前格子是名称区的第几个格子
+                                # 通过检查左边和上边是否有相同building_id的名称格来判断
+                                char_index = 0
+                                if x > 0 and self.grid[y][x-1].building_id == cell.building_id and self.grid[y][x-1].city_name:
+                                    char_index = 1
+                                elif y > 0 and self.grid[y-1][x].building_id == cell.building_id and self.grid[y-1][x].city_name:
+                                    char_index = 1
+                                
+                                # 显示对应的字符
+                                if char_index < len(full_name):
+                                    char = full_name[char_index]
+                                    text_surf = self.font.render(char, True, WHITE)
+                                    text_rect = text_surf.get_rect(center=(rect.centerx, rect.centery))
+                                    self.screen.blit(text_surf, text_rect)
                     else:
-                        # 建筑槽位
-                        lighter_gold = (255, 235, 100)
-                        pygame.draw.rect(self.screen, lighter_gold, rect)
-                        # 显示槽位标记
-                        text_surf = self.small_font.render("槽", True, BLACK)
-                        self.screen.blit(text_surf, (rect.x + 5, rect.y + 5))
+                        # 建筑槽位 - 使用浅色，不显示"槽"字
+                        pygame.draw.rect(self.screen, light_color, rect)
                 elif cell.type == CellType.JUNCTION:
                     pygame.draw.rect(self.screen, ROAD_COLOR, rect)
                     # 绘制箭头
@@ -687,6 +746,36 @@ class MapEditor:
                 
                 # 绘制网格线
                 pygame.draw.rect(self.screen, LIGHT_GRAY, rect, 1)
+                
+                # 城池特殊处理：粗边框 + 内部细线 + 名称区中间无线
+                if cell.type == CellType.CITY and not cell.is_entrance:
+                    # 检查是否是城池的边界
+                    is_left_edge = x == 0 or self.grid[y][x-1].building_id != cell.building_id or self.grid[y][x-1].type != CellType.CITY
+                    is_right_edge = x == GRID_WIDTH-1 or self.grid[y][x+1].building_id != cell.building_id or self.grid[y][x+1].type != CellType.CITY
+                    is_top_edge = y == 0 or self.grid[y-1][x].building_id != cell.building_id or self.grid[y-1][x].type != CellType.CITY
+                    is_bottom_edge = y == GRID_HEIGHT-1 or self.grid[y+1][x].building_id != cell.building_id or self.grid[y+1][x].type != CellType.CITY
+                    
+                    # 绘制粗边框（3像素）
+                    if is_left_edge:
+                        pygame.draw.line(self.screen, BLACK, (rect.left, rect.top), (rect.left, rect.bottom), 3)
+                    if is_right_edge:
+                        pygame.draw.line(self.screen, BLACK, (rect.right, rect.top), (rect.right, rect.bottom), 3)
+                    if is_top_edge:
+                        pygame.draw.line(self.screen, BLACK, (rect.left, rect.top), (rect.right, rect.top), 3)
+                    if is_bottom_edge:
+                        pygame.draw.line(self.screen, BLACK, (rect.left, rect.bottom), (rect.right, rect.bottom), 3)
+                    
+                    # 绘制内部细线（1像素），但跳过名称区中间的线
+                    # 检查右边是否是同一城池的名称区
+                    if not is_right_edge:
+                        right_cell = self.grid[y][x+1]
+                        # 如果当前和右边都是名称区，则不画线
+                        if not (cell.city_name and right_cell.city_name):
+                            pygame.draw.line(self.screen, DARK_GRAY, (rect.right, rect.top), (rect.right, rect.bottom), 1)
+                    
+                    # 检查下边是否是同一城池
+                    if not is_bottom_edge:
+                        pygame.draw.line(self.screen, DARK_GRAY, (rect.left, rect.bottom), (rect.right, rect.bottom), 1)
                 
                 # 高亮选中的建筑物
                 if self.selected_building_id and cell.building_id == self.selected_building_id:
@@ -952,9 +1041,12 @@ class MapEditor:
                                 break
                         
                         # 初始化城池数据
+                        city_name = self.city_names.get(cell.building_id, f'城池{cell.building_id}')
+                        city_type = self.city_types.get(cell.building_id, '陆')
                         cities[cell.building_id] = {
                             'id': cell.building_id,
-                            'name': f'城池{cell.building_id}',
+                            'name': city_name,
+                            'type': city_type,
                             'x': entrance_x,
                             'y': entrance_y,
                             'direction': direction.value,
@@ -1055,11 +1147,12 @@ class MapEditor:
             entrance_y = city.get('y')
             direction_value = city.get('direction', 0)
             direction = Direction(direction_value)
+            city_type = city.get('type', '陆')  # 读取城池类型，默认为陆
             
             if entrance_x is not None and entrance_y is not None:
                 # 放置城池（会自动设置入口标记）
                 self.next_building_id = city_id
-                result = self.place_city(entrance_x, entrance_y, slots_count, direction)
+                result = self.place_city(entrance_x, entrance_y, slots_count, direction, city_type)
                 self.next_building_id = city_id + 1
                 # 保存城池名称
                 self.city_names[city_id] = city.get('name', f'城池{city_id}')
