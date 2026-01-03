@@ -877,7 +877,8 @@ class MapEditor:
                         'x': x,
                         'y': y,
                         'entry': None,
-                        'id': None
+                        'id': None,
+                        'direction': None
                     }
                     
                     # 检查是否是入口
@@ -898,6 +899,17 @@ class MapEditor:
                             if road_cell['entry']:
                                 break
                     
+                    roads.append(road_cell)
+                
+                # 收集分叉口
+                elif cell.type == CellType.JUNCTION:
+                    road_cell = {
+                        'x': x,
+                        'y': y,
+                        'entry': None,
+                        'id': None,
+                        'direction': cell.arrow_direction.value  # 分叉方向
+                    }
                     roads.append(road_cell)
                 
                 # 收集建筑物
@@ -1003,12 +1015,18 @@ class MapEditor:
     
     def _load_compressed_format(self, map_data: dict):
         """加载压缩格式的地图数据"""
-        # 第一步：加载道路（不设置入口标记）
+        # 第一步：加载道路和分叉口（不设置入口标记）
         for road in map_data.get('roads', []):
             x, y = road['x'], road['y']
             if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT:
                 cell = self.grid[y][x]
-                cell.type = CellType.ROAD
+                
+                # 检查是否是分叉口（有direction字段且不为null）
+                if road.get('direction') is not None:
+                    cell.type = CellType.JUNCTION
+                    cell.arrow_direction = Direction(road['direction'])
+                else:
+                    cell.type = CellType.ROAD
                 # 注意：不在这里设置入口标记，由place_building/place_city设置
         
         # 第二步：加载建筑物

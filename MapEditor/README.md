@@ -78,10 +78,17 @@ start_editor.bat
 {
   "x": 10,
   "y": 5,
-  "entry": null,  // null=普通道路, 1=建筑入口, 2=城池入口
-  "id": null     // 入口对应的建筑/城池ID
+  "entry": null,     // null=普通道路, 1=建筑入口, 2=城池入口
+  "id": null,        // 入口对应的建筑/城池ID
+  "direction": null  // null=普通道路, 0-3=分叉口方向(UP/RIGHT/DOWN/LEFT)
 }
 ```
+
+**注意**：
+- 普通道路：`entry=null, id=null, direction=null`
+- 建筑入口：`entry=1, id=建筑ID, direction=null`
+- 城池入口：`entry=2, id=城池ID, direction=null`
+- 分叉口：`entry=null, id=null, direction=0-3`
 
 ### Building 结构
 ```json
